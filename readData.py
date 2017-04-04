@@ -7,9 +7,8 @@ import re
 
 # http://radimrehurek.com/gensim/tut1.html
 # http://radimrehurek.com/gensim/tut2.html
-
 trainDF=pd.read_csv("Data/train.csv")
-testDF=pd.read_csv("Data/test.csv")
+testDF=pd.read_csv("Data/test.csv") 
 
 trainDF.question1.fillna('', inplace=True)
 trainDF.question2.fillna('', inplace=True)
@@ -23,13 +22,13 @@ frame = [trainDF,testDF]
 df = pd.concat(frame,ignore_index = True)
 
 frame = [df.question1,df.question2]
-# stop = stopwords.words('english')
-stop=['my','i','the','for']
+stop = stopwords.words('english')
 questions = pd.concat(frame,ignore_index = True)
 questions=questions.str.lower()
-questions=questions.replace('?','')
-
-# questions=questions.apply(lambda x: [item for item in x if item not in stop])
+import ipdb; ipdb.set_trace()
+questions=questions.str.replace('?','')
+questions.replace({r'[^\x00-\x7F]+':''}, regex=True, inplace=True)
+questions=questions.apply(lambda x: [item for item in x if item not in stop])
 
 def cleanQuestions(question):
     question=re.sub(r'[\s]+', ' ', question,flags=re.MULTILINE)
