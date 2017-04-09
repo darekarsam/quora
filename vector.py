@@ -1,11 +1,82 @@
 import pandas as pd
+from gensim import models
+import re
+import numpy as np
 
-
-
+print "Reading Dataframe..."
 trainDF = pd.read_csv("Data/train.csv")
 testDF = pd.read_csv("Data/test.csv")
-import ipdb; ipdb.set_trace()
+
+trainDF.question1.fillna('abc', inplace=True)
+trainDF.question2.fillna('abc', inplace=True)
+
 train = trainDF.sample(frac=0.8,random_state=200)
 test = trainDF.drop(train.index)
 
-train, test = train_test_split(trainDF, test_size=0.2)
+
+def cleanQuestion(question):
+    """Functions to clean question pairs
+    """
+    # convert to lower case
+    question = question.lower()
+    # remove extra spaces
+    question = re.sub(r'[\s]+', ' ', question, flags=re.MULTILINE)
+    # remove all punctuations
+    question = re.sub(r'[^a-zA-Z]', ' ', question, flags=re.MULTILINE)
+    return question
+
+def getLabeledSentence(questions, label):
+    labeledQuestions=[]
+    for uid, line in enumerate(questions):
+        labeledQuestions.append( models.doc2vec.LabeledSentence(words=line.split(), tags=[label+str(uid)]))
+    
+    return labeledQuestions
+
+#retaining indexes to retrieve vectors for questions
+train.reset_index(inplace=True)
+train['index']=train.index
+
+print "Cleaning Dataframe..."
+train.question1 = train.question1.apply(cleanQuestion)
+train.question2 = train.question2.apply(cleanQuestion)
+
+
+labeledQuestions1 = getLabeledSentence(train.question1.tolist(), 'question1')
+labeledQuestions2 = getLabeledSentence(train.question2.tolist(), 'question2')
+model = models.Doc2Vec(alpha=.025, min_alpha=.025, min_count=1)
+labeledQuestions = labeledQuestions1 + labeledQuestions2
+
+print "Building Vocab..."
+model.build_vocab(labeledQuestions)
+
+print "Training model..."
+model.train(labeledQuestions)
+
+print "Saving model..."
+model.save('Models/4_8model')
+
+model_loaded = Doc2Vec.load('Models/4_8model')
+
+label = []
+for i in range(len(labeledQuestions1)):
+    label.append(model.docvecs.similarity('question1%d'%i, 'question2%d'%i))
+import ipdb; ipdb.set_trace()
+similarityDF = pd.DataFrame(label)
+similarityDF['y'] = train.is_duplicate
+
+vectors1 = []
+vectors2 = []
+print "Fetching Vectors..."
+for i in range(len(labeledQuestions1)*2):
+    if i< len(labeledQuestions1):
+        vectors1.append(model.docvecs[i])
+    else:
+        vectors2.append(model.docvecs[i])
+import ipdb; ipdb.set_trace()
+
+vectors1 = np.asarray(vectors1)
+vectors2 = np.asarray(vectors2)
+
+labels = np.asarray(train.is_duplicate)
+
+
