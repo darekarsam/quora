@@ -112,7 +112,7 @@ for i in range(len(labeledQuestions1)*2):
         vectors1.append(model.docvecs[i])
     else:
         vectors2.append(model.docvecs[i])
-
+#0.913 to 0.443
 testvectors1 = []
 testvectors2 = []
 print "Fetching Test Vectors..."
@@ -141,10 +141,12 @@ from sklearn.neural_network import MLPClassifier
 clf = MLPClassifier(hidden_layer_sizes=(600,300,40,10,10),max_iter=150, alpha=1e-4, solver='sgd',verbose=True, \
 	tol=0.0001, learning_rate_init=0.0005)
 print "training classifier ..."
-clf.fit(vectorDiff, labels)
-pickle.dump(clf, open('Models/nn_150_unstemmed.pickle', 'wb'))
-Y_test = clf.predict_proba(testvectorDiff)
+#clf.fit(vectorDiff, labels)
+#pickle.dump(clf, open('Models/nn_150_unstemmed.pickle', 'wb'))
+clf = pickle.load( open('Models/nn_150_unstemmed.pickle', "rb" ))
 import ipdb; ipdb.set_trace()
+Y_test = clf.predict_proba(testvectorDiff)
+
 sub = pd.DataFrame()
 sub['test_id'] = testDF.test_id
 sub['is_duplicate'] = pd.Series(zip(*Y_test)[1])
